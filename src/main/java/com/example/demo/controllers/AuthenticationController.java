@@ -14,11 +14,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.ApiResponse;
+import com.example.demo.dto.auth.LoginDTO;
 import com.example.demo.jwt.JwtUtil;
 import com.example.demo.models.User;
 import com.example.demo.service.MyUserDetailsService;
 
 import java.util.Collections;
+
+import javax.validation.Valid;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,14 +42,14 @@ public class AuthenticationController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @PostMapping("/login")
-    public ResponseEntity<?> createAuthenticationToken(@RequestBody User authenticationRequest) {
+    public ResponseEntity<?> createAuthenticationToken(@Valid @RequestBody LoginDTO authenticationRequest) {
         try {
             logger.info("LoggerService will run in 3s");
             authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword())
+                new UsernamePasswordAuthenticationToken(authenticationRequest.getEmail(), authenticationRequest.getPassword())
             );
 
-            final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getUsername());
+            final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getEmail());
 
             ApiResponse<Object> response = new ApiResponse<>(
                 false,
