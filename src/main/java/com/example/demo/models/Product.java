@@ -12,6 +12,14 @@ public class Product {
 
     private String name;
     private Double price;
+    public Long getCategoryId() {
+		return categoryId;
+	}
+	public void setCategoryId(Long categoryId) {
+		this.categoryId = categoryId;
+	}
+	@Column(name = "category_id")
+    private Long categoryId;
 	public Long getId() {
 		return id;
 	}
@@ -30,11 +38,13 @@ public class Product {
 	public void setPrice(Double price) {
 		this.price = price;
 	}
-	public Product(Long id, String name, Double price) {
+
+	public Product(Long id, String name, Double price, Long categoryId) {
 		super();
 		this.id = id;
 		this.name = name;
 		this.price = price;
+		this.categoryId = categoryId;
 	}
 	public Product() {
 		super();

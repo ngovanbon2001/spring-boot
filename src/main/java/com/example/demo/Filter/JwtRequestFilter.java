@@ -15,6 +15,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.example.demo.dto.ApiResponse;
 import com.example.demo.jwt.JwtUtil;
 import com.example.demo.service.MyUserDetailsService;
 
@@ -37,45 +38,55 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         final String requestTokenHeader = request.getHeader("Authorization");
-
         String username = null;
         String jwtToken = null;
 
-        // JWT Token is in the form "Bearer token". Remove Bearer word and get only the Token
         if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
             jwtToken = requestTokenHeader.substring(7);
             try {
                 username = jwtUtil.extractUsername(jwtToken);
             } catch (IllegalArgumentException e) {
-                logger.error("Unable to get JWT Token");
+                writeErrorResponse(response, "Không thể đọc JWT Token", "INVALID_TOKEN");
+                return;
             } catch (ExpiredJwtException e) {
-                logger.error("JWT Token has expired");
+                writeErrorResponse(response, "JWT Token đã hết hạn", "TOKEN_EXPIRED");
+                return;
             } catch (SignatureException | MalformedJwtException | UnsupportedJwtException e) {
-                logger.error("Invalid JWT Token");
+                writeErrorResponse(response, "JWT Token không hợp lệ", "INVALID_TOKEN");
+                return;
             }
         } else {
+            // Nếu không có Bearer token thì để chain chạy tiếp,
+            // vì có thể một số endpoint public không cần JWT
             logger.warn("JWT Token does not begin with Bearer String");
         }
 
-        // Once we get the token, validate it
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(username);
 
-            // If token is valid, configure Spring Security to manually set authentication
             if (jwtUtil.validateToken(jwtToken, userDetails)) {
-
-                UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken =
+                UsernamePasswordAuthenticationToken authentication =
                         new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-
-                usernamePasswordAuthenticationToken
-                        .setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                // After setting the Authentication in the context, specify that the current user is authenticated
-                // So that it passes the Spring Security Configurations successfully.
-                SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authentication);
             }
         }
+
         chain.doFilter(request, response);
+    }
+
+    private void writeErrorResponse(HttpServletResponse response, String message, String code) throws IOException {
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        response.setContentType("application/json;charset=UTF-8");
+
+        ApiResponse<String> apiResponse = new ApiResponse<>(
+                false,   // success
+                message, // message
+                code,    // code
+                null     // data
+        );
+
+        new com.fasterxml.jackson.databind.ObjectMapper()
+                .writeValue(response.getWriter(), apiResponse);
     }
 }

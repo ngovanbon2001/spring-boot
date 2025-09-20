@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.example.demo.models.Product;
@@ -21,6 +23,10 @@ public class ProductService {
 
     public List<Product> getAllProducts() {
         return productRepository.findAll();
+    }
+    
+    public Page<Product> getManageProducts(Long categoryId, String keyword, Pageable pageable) {
+        return productRepository.getManageProducts(categoryId, keyword, pageable);
     }
 
     public Optional<Product> getProductById(Long id) {
