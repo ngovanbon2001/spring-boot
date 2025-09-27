@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.demo.dto.ApiResponse;
+import com.example.demo.dto.CreateUserDto;
 import com.example.demo.dto.auth.LoginDTO;
 import com.example.demo.jwt.JwtUtil;
 import com.example.demo.models.User;
@@ -92,4 +93,20 @@ public class AuthenticationController {
             return ResponseEntity.status(HttpStatus.OK).body(response);
         }
     }
+    
+    @PostMapping("/register")
+    public ApiResponse<Object> register(@Valid @RequestBody CreateUserDto reCreateUserDto) {
+    	try {
+    		return new ApiResponse<>(true, "Success", "200", userDetailsService.register(reCreateUserDto));
+    	} catch (Exception e) {
+            logger.error("====== UNEXPECTED ERROR ======");
+            logger.error("Chi tiết lỗi: ", e);
+            return new ApiResponse<>(
+                false,
+                e.getMessage(),
+                "500",
+                null
+            );
+        }
+	}
 }
