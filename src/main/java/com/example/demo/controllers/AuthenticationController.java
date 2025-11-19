@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.demo.common.BaseResponse;
 import com.example.demo.dto.ApiResponse;
 import com.example.demo.dto.CreateUserDto;
 import com.example.demo.dto.auth.LoginDTO;
@@ -43,54 +44,32 @@ public class AuthenticationController {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @PostMapping("/login")
-    public ResponseEntity<?> createAuthenticationToken(@Valid @RequestBody LoginDTO authenticationRequest) {
+    public BaseResponse<?> createAuthenticationToken(@Valid @RequestBody LoginDTO authenticationRequest) {
         try {
+            // String hash = new org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder().encode("123456");
+            // logger.info(hash);
             logger.info("LoggerService will run in 3s");
+
             authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(authenticationRequest.getEmail(), authenticationRequest.getPassword())
             );
 
             final UserDetails userDetails = userDetailsService.loadUserByUsername(authenticationRequest.getEmail());
 
-            ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                "User không tồn tại",
-                "404",
-                null
-            );
+            if (userDetails == null) {
+                throw new Exception("Tên người dùng không tồn tại trong hệ thống.");
+            }
 
-            if (userDetails != null) {
-                final String jwt = jwtUtil.generateToken(userDetails);
-
-                response = new ApiResponse<>(
-                    true,
-                    "Đăng nhập thành công",
-                    "200",
-                    Collections.singletonMap("token", jwt)
-                );
-            } 
-
-            return ResponseEntity.status(HttpStatus.OK).body(response);
+            final String jwt = jwtUtil.generateToken(userDetails);
+            return BaseResponse.success(jwt);
         } catch (AuthenticationException e) {
             logger.error("====== AuthenticationException ERROR ======");
             logger.error("Chi tiết lỗi: ", e);
-            ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                "Sai thông tin đăng nhập",
-                "404",
-                null
-            );
-            return ResponseEntity.status(HttpStatus.OK).body(response);
+            return BaseResponse.failed("Sai thông tin đăng nhập");
         } catch (Exception e) {
             logger.error("====== UNEXPECTED ERROR ======");
             logger.error("Chi tiết lỗi: ", e);
-            ApiResponse<Object> response = new ApiResponse<>(
-                false,
-                "Có lỗi xảy ra, vui lòng thử lại",
-                "500",
-                null
-            );
-            return ResponseEntity.status(HttpStatus.OK).body(response);
+            return BaseResponse.failed("Có lỗi xảy ra, vui lòng thử lại");
         }
     }
     
